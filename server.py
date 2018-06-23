@@ -18,6 +18,8 @@ import os
 import json
 import csv
 from face import FaceDetectorDlib
+import inception_resnet_v1
+import cv2
 
 RESIZE_FINAL = 227
 GENDER_LIST =['M','F']
@@ -92,7 +94,37 @@ class Predict:
                 best = np.argmax(output)
                 return label_list[best]
 
-age = Predict('./checkpoints/age', AGE_LIST)
+class PredictAge:
+    def __init__(self, checkpoint_path):
+        self.graph=tf.Graph() #为每个类(实例)单独创建一个graph
+        self.sess=tf.Session(graph=self.graph) #创建新的sess
+        with self.sess.as_default():
+            with self.graph.as_default():
+                self.sess = tf.Session()
+                self.images_pl = tf.placeholder(tf.float32, shape=[None, 160, 160, 3], name='input_image')
+                images = tf.map_fn(lambda frame: tf.reverse_v2(frame, [-1]), self.images_pl) #BGR TO RGB
+                images_norm = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), images)
+                age_logits, gender_logits, _ = inception_resnet_v1.inference(images_norm, keep_probability=0.8, phase_train=False, weight_decay=1e-5)
+                # gender = tf.argmax(tf.nn.softmax(gender_logits), 1)
+                age_ = tf.cast(tf.constant([i for i in range(0, 101)]), tf.float32)
+                self.age = tf.reduce_sum(tf.multiply(tf.nn.softmax(age_logits), age_), axis=1)
+                init_op = tf.group(tf.global_variables_initializer(), tf.local_variables_initializer())
+                self.sess.run(init_op)
+                saver = tf.train.Saver()
+                ckpt = tf.train.get_checkpoint_state(checkpoint_path)
+                if ckpt and ckpt.model_checkpoint_path:
+                    saver.restore(self.sess, ckpt.model_checkpoint_path)
+                    print("restore and continue training!")
+                    print(ckpt.model_checkpoint_path)
+    def predict(self, aligned_images):
+        with self.sess.as_default():
+            with self.graph.as_default():
+                aligned_images = np.array([cv2.resize(image, (160, 160)) for image in aligned_images])
+                ages = self.sess.run(self.age, feed_dict={self.images_pl: aligned_images})
+                return ages
+
+# age = Predict('./checkpoints/age', AGE_LIST)
+age = PredictAge('./checkpoints/age1')
 gender = Predict('./checkpoints/gender', GENDER_LIST)
 detector = FaceDetectorDlib('data/shape_predictor_68_face_landmarks.dat')
 
@@ -113,9 +145,12 @@ def detection():
         return jsonify({'no': 404, 'msg': '找不到文件'})
     aligned_images, XY = detector.run(image)
     data = []
+    ages = age.predict(aligned_images)
     for i in range(len(aligned_images)):
         aligned_image = aligned_images[i]
-        data.append({'rect':XY[i],'age':age.predict(aligned_image),'gender':gender.predict(aligned_image)})
+        # data.append({'rect':XY[i],'age':age.predict(aligned_image),'gender':gender.predict(aligned_image)})
+        data.append({'rect':XY[i],'age':float(ages[i]),'gender':gender.predict(aligned_image)})
+        
     return jsonify({'no':200,'data':data})
 
 if __name__ == '__main__':
