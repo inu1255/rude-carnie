@@ -102,7 +102,7 @@ def classify_one_multi_crop(sess, label_list, softmax_output, coder, images, ima
     
         for i in range(1, batch_sz):
             output = output + batch_results[i]
-        
+
         output /= batch_sz
         best = np.argmax(output)
         best_choice = (label_list[best], output[best])
@@ -161,7 +161,6 @@ def main(argv=None):  # pylint: disable=unused-argument
             checkpoint_path = '%s' % (FLAGS.model_dir)
 
             model_checkpoint_path, global_step = get_checkpoint(checkpoint_path, requested_step, FLAGS.checkpoint)
-            
             saver = tf.train.Saver()
             saver.restore(sess, model_checkpoint_path)
                         

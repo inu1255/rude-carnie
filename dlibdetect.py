@@ -2,7 +2,7 @@ from detect import ObjectDetector
 
 import dlib
 import cv2
-FACE_PAD = 50
+FACE_PAD = 1
 
 class FaceDetectorDlib(ObjectDetector):
     def __init__(self, model_name, basename='frontal-face', tgtdir='.'):
@@ -15,7 +15,7 @@ class FaceDetectorDlib(ObjectDetector):
         print(image_file)
         img = cv2.imread(image_file)
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        faces = self.detector(gray, 1)
+        faces = self.detector(gray, 2)
         images = []
         bb = []
         for (i, rect) in enumerate(faces):

@@ -139,6 +139,7 @@ def make_multi_crop_batch(filename, coder):
         image_data = coder.png_to_jpeg(image_data)
     
     image = coder.decode_jpeg(image_data)
+    print(image.shape, image.dtype)
 
     crops = []
     print('Running multi-cropped image')
