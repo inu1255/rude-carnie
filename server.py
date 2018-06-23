@@ -145,12 +145,13 @@ def detection():
         return jsonify({'no': 404, 'msg': '找不到文件'})
     aligned_images, XY = detector.run(image)
     data = []
-    ages = age.predict(aligned_images)
-    for i in range(len(aligned_images)):
-        aligned_image = aligned_images[i]
-        # data.append({'rect':XY[i],'age':age.predict(aligned_image),'gender':gender.predict(aligned_image)})
-        data.append({'rect':XY[i],'age':float(ages[i]),'gender':gender.predict(aligned_image)})
-        
+    if aligned_images is not None and len(aligned_images)>0:
+        ages = age.predict(aligned_images)
+        for i in range(len(aligned_images)):
+            aligned_image = aligned_images[i]
+            # data.append({'rect':XY[i],'age':age.predict(aligned_image),'gender':gender.predict(aligned_image)})
+            data.append({'rect':XY[i],'age':float(ages[i]),'gender':gender.predict(aligned_image)})
+
     return jsonify({'no':200,'data':data})
 
 if __name__ == '__main__':
