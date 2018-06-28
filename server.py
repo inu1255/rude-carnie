@@ -65,7 +65,9 @@ class Predict:
 
     def init(self):
         self.graph=tf.Graph() #为每个类(实例)单独创建一个graph
-        self.sess=tf.Session(graph=self.graph) #创建新的sess
+        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.2)
+        config = tf.ConfigProto(gpu_options=gpu_options)
+        self.sess=tf.Session(graph=self.graph, config=config)
         with self.sess.as_default():
             with self.graph.as_default():
                 self.images = tf.placeholder(tf.float32, [None, RESIZE_FINAL, RESIZE_FINAL, 3])
